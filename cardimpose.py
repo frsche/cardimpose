@@ -46,7 +46,7 @@ class CardImpose:
 	DEFAULT_CM_DISTANCE = "2mm"
 	DEFAULT_CM_NO_SMALLER_THAN = "0.5mm"
 
-	def __init__(self, card_path: str, rotate=False):
+	def __init__(self, card_path: str):
 		"""Construct a new `CardImpose` to impose the card contained in the `card_path` pdf file."""
 
 		self.card = fitz.open(card_path)
@@ -54,9 +54,6 @@ class CardImpose:
 			raise ValueError("Card pdf can only contain a single page.")
 
 		self.cardpage = self.card.load_page(0)	
-
-		if rotate:
-			self.cardpage.set_rotation(90)
 
 		self._cardwidth = self.cardpage.mediabox.width
 		self._cardheight = self.cardpage.mediabox.height
@@ -256,7 +253,6 @@ if __name__ == "__main__":
 
 	layout_group = parser.add_argument_group("Layout", "Configure the layout of the cards onto the resulting document.")
 	layout_group.add_argument("--nup", help="The number of rows and columns of cards to include.", default="auto")
-	layout_group.add_argument("--rotate-card", help="Rotate the card before imposing.", action="store_true")
 	layout_group.add_argument("--page-size", help=f"The size of the resulting document (default: {CardImpose.DEFAULT_PAPER_SIZE}).", default=CardImpose.DEFAULT_PAPER_SIZE)
 	layout_group.add_argument("--rotate-page", help="Rotate the resulting document before imposing.", action="store_true")
 	layout_group.add_argument("--gutter", help=f"The gutter inserted between cards (default: {CardImpose.DEFAULT_GUTTER}).", default=CardImpose.DEFAULT_GUTTER)
@@ -268,7 +264,7 @@ if __name__ == "__main__":
 	cut_marks_group.add_argument("--cut-mark-length", help=f"the length of the cutmarks. (default: {CardImpose.DEFAULT_CM_LENGTH}).", default=CardImpose.DEFAULT_CM_LENGTH)
 	cut_marks_group.add_argument("--cut-mark-distance", help=f"the distance of the cutmarks form the card. (default: {CardImpose.DEFAULT_CM_DISTANCE} or bleed).")
 	cut_marks_group.add_argument("--cut-mark-thickness", help=f"the thickness of the cutmarks. (default: {CardImpose.DEFAULT_CM_THICKNESS}).", default=CardImpose.DEFAULT_CM_THICKNESS)
-	cut_marks_group.add_argument("--cut-mark-no-inner", help=f"hide the cutmarks in between the cards.", action="store_true")
+	cut_marks_group.add_argument("--no-inner-cut-marks", help=f"hide the cutmarks in between the cards.", action="store_true")
 
 	args = parser.parse_args()
 
@@ -281,7 +277,7 @@ if __name__ == "__main__":
 	if not args.bleed:
 		args.bleed = CardImpose.DEFAULT_BLEED
 
-	impose = CardImpose(args.card, rotate=args.rotate_card) \
+	impose = CardImpose(args.card) \
 	.set_page_size(args.page_size, rotate=args.rotate_page) \
 	.set_gutter(args.gutter) \
 	.set_margin(args.margin) \
@@ -290,7 +286,7 @@ if __name__ == "__main__":
 		length=args.cut_mark_length,
 		distance=args.cut_mark_distance,
 		thickness=args.cut_mark_thickness,
-		no_inner=args.cut_mark_no_inner
+		no_inner=args.no_inner_cut_marks
 	)
 
 	if args.nup == "auto":
