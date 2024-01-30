@@ -1,6 +1,5 @@
 import unittest
 from cardimpose.cardimpose import parse_length, parse_tuple, parse_page_spec
-import sys
 
 class TestPageSpec(unittest.TestCase):
 

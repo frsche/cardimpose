@@ -177,11 +177,13 @@ class CardImpose:
 		available_height = height - 2 * self.margin_y
 		rows = math.floor((available_height - cardheight) / (cardheight + self.gutter_y)) + 1
 		cols = math.floor((available_width - cardwidth) / (cardwidth + self.gutter_x)) + 1
+		if rows <= 0 or cols <= 0:
+			raise RuntimeError("Page is to small to fit any cards.")
 		self._impose(rows, cols, pageid, outputpage)
 
-	def impose(self, rows, cols, page) -> fitz.Document:
+	def impose(self, rows, cols) -> fitz.Document:
 		"""Impose the card in rows and columns at the center of the document."""
-		output = fit.Document()
+		output = fitz.Document()
 		for pageid in self.pages:
 			outputpage = output.new_page(width=self.output_size[0], height=self.output_size[1])
 			self._impose(rows, cols, pageid, outputpage)
@@ -203,8 +205,7 @@ class CardImpose:
 		start_y = center_y - (rows * cardheight / 2) - ((rows-1) * self.gutter_y / 2)
 
 		if start_x < self.margin_x or start_y < self.margin_y:
-			print("Imposition does not fit page size")
-			exit(1)
+			raise RuntimeError("Imposition does not fit page size.")
 
 		for x in range(cols):
 			for y in range(rows):
