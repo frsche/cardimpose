@@ -3,6 +3,8 @@ import argparse
 import fitz
 import re
 import math
+import os
+import sys
 
 def parse_length(length) -> float:
 	"""Parses the given `length` and returns it as a floating point number in pixels."""
@@ -22,7 +24,7 @@ def parse_length(length) -> float:
 		elif unit == "px":
 			return number
 
-	raise ValueError(f"Error parsing unit {length}.")
+	raise ValueError(f"Unsupported length \"{length}\".")
 
 def parse_tuple(tup) -> (float, float):
 	"""Parses the given argument as a tuple in the form \"AxB\" and returns (A,B) or returns (A, A) if only \"A\" is given."""
@@ -54,7 +56,7 @@ def parse_page_spec(spec, num_pages):
 				else:
 					pages.extend(range(lb-1, ub-2, -1))
 			else:
-				raise ValueError(f"Error parsing page spec: {spec}")	
+				raise ValueError(f"Error parsing page spec \"{spec}\".")	
 
 	for page in pages:
 		if page < 0 or page >= num_pages:
@@ -76,7 +78,11 @@ class CardImpose:
 	def __init__(self, card_path: str):
 		"""Construct a new `CardImpose` to impose the card contained in the `card_path` pdf file."""
 
-		self.card = fitz.open(card_path)
+		try:
+			self.card = fitz.open(card_path)
+		except RuntimeError as e:
+			raise RuntimeError(f"Invalid pdf file \"{card_path}\".")
+
 		self.pages = range(0, self.card.page_count)
 
 		self.gutter_x = parse_length(CardImpose.DEFAULT_GUTTER)
@@ -149,7 +155,7 @@ class CardImpose:
 		if type(size) == str:
 			size = fitz.paper_size(size)
 			if size == (-1,-1):
-				raise ValueError(f"unknown paper size {size}.")
+				raise ValueError(f"Unknown paper size \"{size}\".")
 			self.output_size = size
 		else:
 			# otherwise, we expect a tuple of width and height
@@ -190,7 +196,6 @@ class CardImpose:
 		return output
 
 	def _impose(self, rows, cols, pageid, outputpage):
-
 		outputbox = outputpage.mediabox
 
 		card_page = self.card.load_page(pageid)
@@ -206,6 +211,9 @@ class CardImpose:
 
 		if start_x < self.margin_x or start_y < self.margin_y:
 			raise RuntimeError("Imposition does not fit page size.")
+
+		if cardwidth / 2 <= self.bleed or cardheight / 2 <= self.bleed:
+			raise RuntimeError("Bleed too large for card size.")
 
 		for x in range(cols):
 			for y in range(rows):
@@ -321,31 +329,36 @@ def main():
 	if not args.bleed:
 		args.bleed = CardImpose.DEFAULT_BLEED
 
-	impose = CardImpose(args.card) \
-	.set_page_size(args.page_size, rotate=args.rotate_page) \
-	.set_gutter(args.gutter) \
-	.set_margin(args.margin) \
-	.set_bleed(args.bleed) \
-	.set_crop_marks(
-		length=args.cut_mark_length,
-		distance=args.cut_mark_distance,
-		thickness=args.cut_mark_thickness,
-		no_inner=args.no_inner_cut_marks
-	) \
-	.set_pages(args.pages)
+	try:
+		impose = CardImpose(args.card) \
+		.set_page_size(args.page_size, rotate=args.rotate_page) \
+		.set_gutter(args.gutter) \
+		.set_margin(args.margin) \
+		.set_bleed(args.bleed) \
+		.set_crop_marks(
+			length=args.cut_mark_length,
+			distance=args.cut_mark_distance,
+			thickness=args.cut_mark_thickness,
+			no_inner=args.no_inner_cut_marks
+		) \
+		.set_pages(args.pages)
 
-	if args.nup == "auto":
-		document = impose.fill_page()
-	else:
-		rows, cols = args.nup.split("x")
-		document = impose.impose(int(rows), int(cols))
+		if args.nup == "auto":
+			document = impose.fill_page()
+		else:
+			rows, cols = args.nup.split("x")
+			document = impose.impose(int(rows), int(cols))
 
-	if not args.output:
-		output = args.card.removesuffix('.pdf') + "_imposed.pdf"
-	else:
-		output = args.output
+		if not args.output:
+			output = os.path.basename(args.card).removesuffix('.pdf') + "_imposed.pdf"
+		else:
+			output = args.output
 
-	document.save(output)
+		document.save(output)
+
+	except Exception as e:
+		print(f"Error: {e}", file=sys.stderr)
+		exit(1)
 
 if __name__ == "__main__":
 	main()
