@@ -58,7 +58,7 @@ def parse_page_spec(spec, num_pages):
 
 	for page in pages:
 		if page < 0 or page >= num_pages:
-			raise ValueError(f"Not all pages in {spec} exist.")
+			raise ValueError(f"Page {page+1} does not exist.")
 	return pages
 	
 
@@ -71,18 +71,13 @@ class CardImpose:
 	DEFAULT_CM_THICKNESS = "0.2mm"
 	DEFAULT_CM_DISTANCE = "2mm"
 	DEFAULT_CM_NO_SMALLER_THAN = "0.5mm"
+	DEFAULT_PAGE_SPEC = "."
 
 	def __init__(self, card_path: str):
 		"""Construct a new `CardImpose` to impose the card contained in the `card_path` pdf file."""
 
 		self.card = fitz.open(card_path)
-		if self.card.page_count != 1:
-			raise ValueError("Card pdf can only contain a single page.")
-
-		self.cardpage = self.card.load_page(0)	
-
-		self._cardwidth = self.cardpage.mediabox.width
-		self._cardheight = self.cardpage.mediabox.height
+		self.pages = range(0, self.card.page_count)
 
 		self.gutter_x = parse_length(CardImpose.DEFAULT_GUTTER)
 		self.gutter_y = self.gutter_x
@@ -115,6 +110,12 @@ class CardImpose:
 		"""Set the amount of bleed around the card."""
 
 		self.bleed = parse_length(bleed)
+		return self
+
+	def set_pages(self, pagespec):
+		""""Set the desired range of pages of the card pdf to impose."""
+
+		self.pages = parse_page_spec(pagespec, self.card.page_count)
 		return self
 
 	def set_crop_marks(self, length=None, distance=None, no_inner=False, no_smaller_than=None, thickness=None):
@@ -160,29 +161,46 @@ class CardImpose:
 
 	def fill_page(self) -> fitz.Document:
 		"""Fill the whole page with as many rows and columns as possible."""
+		output = fitz.Document()
+		for pageid in self.pages:
+			outputpage = output.new_page(width=self.output_size[0], height=self.output_size[1])
+			self._fill_page(pageid, outputpage)
+		return output
 
-		(width, height) = self.output_size
+	def _fill_page(self, pageid, outputpage) -> fitz.Page:
+
+		card_page = self.card.load_page(pageid)
+		cardwidth, cardheight = card_page.mediabox.width, card_page.mediabox.height
+		width, height = self.output_size
+
 		available_width = width - 2 * self.margin_x
 		available_height = height - 2 * self.margin_y
-		rows = math.floor((available_height - self._cardheight) / (self._cardheight + self.gutter_y)) + 1
-		cols = math.floor((available_width - self._cardwidth) / (self._cardwidth + self.gutter_x)) + 1
-		return self.impose(rows, cols)
+		rows = math.floor((available_height - cardheight) / (cardheight + self.gutter_y)) + 1
+		cols = math.floor((available_width - cardwidth) / (cardwidth + self.gutter_x)) + 1
+		self._impose(rows, cols, pageid, outputpage)
 
-
-	def impose(self, rows, cols) -> fitz.Document:
+	def impose(self, rows, cols, page) -> fitz.Document:
 		"""Impose the card in rows and columns at the center of the document."""
-		output = fitz.Document()
-		outputpage = output.new_page(width=self.output_size[0], height=self.output_size[1])
+		output = fit.Document()
+		for pageid in self.pages:
+			outputpage = output.new_page(width=self.output_size[0], height=self.output_size[1])
+			self._impose(rows, cols, pageid, outputpage)
+		return output
+
+	def _impose(self, rows, cols, pageid, outputpage):
 
 		outputbox = outputpage.mediabox
+
+		card_page = self.card.load_page(pageid)
+		cardwidth, cardheight = card_page.mediabox.width, card_page.mediabox.height
 
 		# The center of the resulting page
 		center_x = outputbox.x1 / 2
 		center_y = outputbox.y1 / 2
 
 		# The coordinates of the top left corner of the top left card on the page
-		start_x = center_x - (cols * self._cardwidth / 2) - ((cols-1) * self.gutter_x / 2)
-		start_y = center_y - (rows * self._cardheight / 2) - ((rows-1) * self.gutter_y / 2)
+		start_x = center_x - (cols * cardwidth / 2) - ((cols-1) * self.gutter_x / 2)
+		start_y = center_y - (rows * cardheight / 2) - ((rows-1) * self.gutter_y / 2)
 
 		if start_x < self.margin_x or start_y < self.margin_y:
 			print("Imposition does not fit page size")
@@ -191,12 +209,12 @@ class CardImpose:
 		for x in range(cols):
 			for y in range(rows):
 				# The top left corner of the current card on the page
-				x_pos = start_x + x * self._cardwidth + x * self.gutter_x
-				y_pos = start_y + y * self._cardheight + y * self.gutter_y
+				x_pos = start_x + x * cardwidth + x * self.gutter_x
+				y_pos = start_y + y * cardheight + y * self.gutter_y
 
 				# The bounding box of the current card
-				rect = fitz.Rect(x_pos, y_pos, x_pos + self._cardwidth, y_pos + self._cardheight)
-				outputpage.show_pdf_page(rect, self.card, 0)
+				rect = fitz.Rect(x_pos, y_pos, x_pos + cardwidth, y_pos + cardheight)
+				outputpage.show_pdf_page(rect, self.card, pageid)
 
 				# Whether the current card in in the top/bottom row, left/right column
 				# Used to detect whether crop marks are on the inside of the grid
@@ -224,8 +242,6 @@ class CardImpose:
 				for line in crop_lines:
 					if line:
 						outputpage.draw_line(*line, width=self.crop_mark_thickness)
-
-		return output
 
 	def crop_line(self, corner, direction, inner):
 		if inner and self.crop_mark_no_inner:
@@ -276,6 +292,7 @@ def main():
 
 	parser.add_argument("card", metavar="CARD", help="The path of the pdf file containing the card.")
 	parser.add_argument("-o", "--output", help="The path where the resulting document is stored.")
+	parser.add_argument("-p", "--pages", help="The pages of the card pdf to impose (default: {CardImpose.DEFAULT_PAGE_SPEC}).", default=CardImpose.DEFAULT_PAGE_SPEC)
 
 	layout_group = parser.add_argument_group("Layout", "Configure the layout of the cards onto the resulting document.")
 	layout_group.add_argument("--nup", help="The number of rows and columns of cards to include.", default="auto")
@@ -313,7 +330,8 @@ def main():
 		distance=args.cut_mark_distance,
 		thickness=args.cut_mark_thickness,
 		no_inner=args.no_inner_cut_marks
-	)
+	) \
+	.set_pages(args.pages)
 
 	if args.nup == "auto":
 		document = impose.fill_page()
