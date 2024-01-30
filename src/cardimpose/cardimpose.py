@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import argparse
 import fitz
 import re
@@ -14,6 +15,8 @@ def parse_length(length) -> float:
 		if unit == "mm":
 			# 25.4 mm per inch, pdf has 72 pixel per inch
 			return number / 25.4 * 72
+		if unit == "cm":
+			return number / 25.4 * 72 * 10
 		elif unit == "in":
 			return number * 72
 		elif unit == "px":
@@ -243,7 +246,7 @@ class CardImpose:
 
 		return ((p1x, p1y), (p2x, p2y))
 
-if __name__ == "__main__":
+def main():
 	parser = argparse.ArgumentParser(
                     prog='cardimpose',
                     description='Impose multiple copies of a card onto a larger page.')
@@ -301,3 +304,6 @@ if __name__ == "__main__":
 		output = args.output
 
 	document.save(output)
+
+if __name__ == "__main__":
+	main()
