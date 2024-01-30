@@ -28,15 +28,38 @@ def parse_tuple(tup) -> (float, float):
 	"""Parses the given argument as a tuple in the form \"AxB\" and returns (A,B) or returns (A, A) if only \"A\" is given."""
 
 	assert(type(tup) is str)
-	split = re.split(r"(?<!px)x", tup, maxsplit=1)
+	split = re.split(r"(?<!p)x", tup, maxsplit=1)
 	if len(split) == 2:
 		return (parse_length(split[0]), parse_length(split[1]))
 	else:
 		length = parse_length(split[0])
 		return (length, length)
 
+def parse_page_spec(spec, num_pages):
+	pages = []
+	for spec in spec.split(","):
+		if spec == ".":
+			pages.extend(range(0, num_pages))
+		elif spec.isdigit():
+			pages.append(int(spec)-1)
+		elif spec[0] == "-" and spec[1:].isdigit():
+			pages.append(num_pages - int(spec[1:]))
+		else:
+			r = spec.split("-")
+			if len(r) == 2:
+				lb = int(r[0])
+				ub = int(r[1])
+				if lb < ub:
+					pages.extend(range(lb-1, ub))
+				else:
+					pages.extend(range(lb-1, ub-2, -1))
+			else:
+				raise ValueError(f"Error parsing page spec: {spec}")	
 
-	print(match)	
+	for page in pages:
+		if page < 0 or page >= num_pages:
+			raise ValueError(f"Not all pages in {spec} exist.")
+	return pages
 	
 
 class CardImpose:
