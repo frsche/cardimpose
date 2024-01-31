@@ -162,8 +162,8 @@ class CardImpose:
 		card_page = self.card.load_page(pages[0])
 		cardwidth, cardheight = card_page.mediabox.width, card_page.mediabox.height
 
-		for page in self.pages:
-			page = self.card.load_page(pages[page])
+		for page_id in pages:
+			page = self.card.load_page(page_id)
 			if page.mediabox.width != cardwidth or page.mediabox.height != cardheight:
 				raise RuntimeError("All cards must have the same size.")
 

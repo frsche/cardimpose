@@ -2,7 +2,12 @@
 
 Cardimpose is a Python library that makes it easy to arrange multiple copies of a PDF on a larger document, perfect for scenarios like printing business cards. The library lets you customize your layout while adding crop marks and comes with a handy command line tool.
 
-## Example
+## Examples
+
+### Business Cards
+
+<details>
+<summary>Show Example</summary>
 
 Lets say you have a buisness card named `card.pdf`:
 
@@ -42,6 +47,32 @@ Customize the paper size, remove inner cut marks, and more:
 
 ![example4.pdf](https://github.com/frsche/cardimpose/blob/main/images/example5.jpg?raw=true)
 
+</details>
+
+### Flash Cards
+<details>
+<summary>Show Example</summary>
+
+In the first example, we showcased the capability of printing multiple duplicates of a single card onto a larger sheet.
+In this example, we explore a scenario where we aim to produce flashcards, each featuring distinct questions and answers, to print one of each pair.
+Furthermore, we desire to have the answer printed on the back of the corresponding question.
+
+To achieve the single printing of each card, we utilize the option `--mode singles`.
+To implement the printing of answers on the back, we specify `--backside alternating`.
+With this configuration, each card in the input document is immediately followed by the back of the corresponding card.
+Alternatively, the `--backside last-page` option can be employed, which prints the same backside on each distinct front - useful for situations like printing playing cards where all cards share a common backside.
+
+For the flashcards, we would run the following command:
+
+`$ cardimpose --gutter 5mm --bleed 3mm --mode singles --backside alternating flash_cards.pdf`
+
+Executing this command results in the following output document:
+
+![example5.pdf](https://github.com/frsche/cardimpose/blob/main/images/example6.jpg?raw=true)
+
+Note that the backsides are horizontally flipped to ensure proper alignment when printing them double-sided.
+</details>
+
 ## Installation
 
 Install `cardimpose` using pip:
@@ -60,8 +91,9 @@ To control which input pages produce outputs, use the `--pages` argument.
 
 This argument supports various options:
 - Use `.` to include all pages.
-- Specify single page numbers. Negative page numbers are caculated from the back of the document.
-- Define page ranges using hyphens.
+- Specify single page numbers. Negative page numbers are calculated from the back of the document.
+- Define page ranges using hyphens: `1-4` = pages 1, 2, 3 and 4.
+- Print a single page multiple times: `5x1` = 5 times the first page
 - Combine multiple page selections with commas.
 
 For instance, using the command `--pages 1,4-6` will impose pages 1,4,5 and 6 of the input document, generating one imposed output page for each selected input page.

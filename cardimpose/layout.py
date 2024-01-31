@@ -28,6 +28,8 @@ def split_front_back(pages, backside):
 	# Backside.LAST_PAGE returns everything but the last page for the fronts,
 	# and the same number of duplicates of the last page for the backs
 	elif backside == Backside.LAST_PAGE:
+		if len(pages) <= 2:
+			raise RuntimeError("Last-Page doublesided is only possible with for than one input page.")
 		return pages[:-1], [pages[-1]]*(len(pages)-1)
 	# for Backside.ALTERNATING, we split the pages into even and odd pages.
 	elif backside == Backside.ALTERNATING:
