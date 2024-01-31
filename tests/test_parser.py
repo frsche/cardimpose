@@ -1,5 +1,5 @@
 import unittest
-from cardimpose.cardimpose import parse_length, parse_tuple, parse_page_spec
+from cardimpose.parse import parse_length, parse_tuple, parse_page_spec
 
 class TestPageSpec(unittest.TestCase):
 
@@ -38,13 +38,39 @@ class TestPageSpec(unittest.TestCase):
 		pages = parse_page_spec(spec, 5)
 		self.assertEqual(pages, [0,0,4,3,2,0,1,2,3,4])
 
+	def test_duplicated_pages(self):
+		spec = "10x3"
+		pages = parse_page_spec(spec, 5)
+		self.assertEqual(pages, [2] * 10)
+
+	def test_duplicated_pages_reverse(self):
+		spec = "3x-1"
+		pages = parse_page_spec(spec, 5)
+		self.assertEqual(pages, [4] * 3)
+
+	def test_duplicated_pages_combination(self):
+		spec = "2x1,3x2,1x-1"
+		pages = parse_page_spec(spec, 5)
+		self.assertEqual(pages, [0,0,1,1,1,4])
+
 	def test_wrong_page(self):
 		with self.assertRaises(ValueError):
 			parse_page_spec("6", 5)
+
 		with self.assertRaises(ValueError):
 			parse_page_spec("1-4", 3)
+
 		with self.assertRaises(ValueError):
 			parse_page_spec("-5", 3)
+		
+		with self.assertRaises(ValueError):
+			parse_page_spec("-", 3)
+
+		with self.assertRaises(ValueError):
+			parse_page_spec("-2x2", 3)
+
+		with self.assertRaises(ValueError):
+			parse_page_spec("0", 3)
 
 class TestParseLength(unittest.TestCase):
 
@@ -96,6 +122,3 @@ class TestParseLength(unittest.TestCase):
 		tup = "10pxx1cm"
 		parsed_tup = parse_tuple(tup)
 		self.assertEqual(parsed_tup, (parse_length("10px"), parse_length("1cm")))
-
-if __name__ == '__main__':
-    unittest.main()

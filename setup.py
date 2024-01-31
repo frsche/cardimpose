@@ -5,7 +5,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name='cardimpose',
-    version='0.1.1',
+    version='0.2.0',
     description='Impose multiple copies of a pdf onto a larger document.',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -18,7 +18,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'cardimpose = cardimpose.cardimpose:main',
+            'cardimpose = cardimpose.__main__:main',
         ],
     },
     keywords='imposition, print, pdf'

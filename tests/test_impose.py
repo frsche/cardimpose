@@ -1,6 +1,7 @@
 import fitz
 import unittest
-from cardimpose.cardimpose import CardImpose, parse_length
+from cardimpose.cardimpose import CardImpose
+from cardimpose.parse import parse_length
 
 class ResultAnalyzer:
 	def __init__(self, doc):
@@ -99,6 +100,3 @@ class TestImpose(unittest.TestCase):
 		analyzer = ResultAnalyzer(doc)
 		analyzer.check_margin(parse_length("15mm"))
 		analyzer.check_rows_cols(4,1)
-
-if __name__ == '__main__':
-    unittest.main()
