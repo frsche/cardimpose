@@ -82,3 +82,15 @@ def parse_page_spec(spec, num_pages):
 		else:
 			raise ValueError(f"Error parsing page spec \"{spec}\".")	
 	return pages
+
+def parse_nup(nup):
+	s = nup.split("x")
+	if len(s) != 2:
+		raise ValueError("Give rows and cols separated by an \"x\".")
+	rows, cols = s
+	try:
+		rows = int(rows)
+		cols = int(cols)
+	except ValueError:
+		raise ValueError(f"Could not convert \"{nup}\" to pair of ints.")
+	return rows, cols

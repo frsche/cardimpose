@@ -1,5 +1,6 @@
 from cardimpose.cardimpose import CardImpose
 from cardimpose.layout import Mode, Backside
+from cardimpose.parse import parse_nup
 
 import argparse
 import sys
@@ -20,27 +21,18 @@ def main():
 	layout_group.add_argument("--rotate-page", help="Rotate the resulting document before imposing.", action="store_true")
 	layout_group.add_argument("--gutter", help=f"The gutter inserted between cards (default: {CardImpose.DEFAULT_GUTTER}).", default=CardImpose.DEFAULT_GUTTER)
 	layout_group.add_argument("--margin", help=f"The margin included around the resulting document. (default: {CardImpose.DEFAULT_MARGIN}).", default=CardImpose.DEFAULT_MARGIN)
-	layout_group.add_argument("--bleed", help=f"The amount of bleed included in the card. (default: {CardImpose.DEFAULT_BLEED}).")
+	layout_group.add_argument("--bleed", help=f"The amount of bleed included in the card. (default: {CardImpose.DEFAULT_BLEED} or automatically).")
 	layout_group.add_argument("--backside", help=f"The kind of backsides generated in the resulting document. (default: singlesided).", choices=["singlesided", "last-page", "alternating"], default="singlesided")
 	layout_group.add_argument("--mode", help=f"Whether to generate single card per input page or whole output page.", choices=["duplicates", "singles"], default="duplicates")
 
-	cut_marks_group = parser.add_argument_group("Cut Marks", "Configure the cut marks included around the cards.")
-	cut_marks_group.add_argument("--no-cut-marks", action="store_true", help="do not include cutmarks in the resulting document.")
-	cut_marks_group.add_argument("--cut-mark-length", help=f"the length of the cutmarks. (default: {CardImpose.DEFAULT_CM_LENGTH}).", default=CardImpose.DEFAULT_CM_LENGTH)
-	cut_marks_group.add_argument("--cut-mark-distance", help=f"the distance of the cutmarks form the card. (default: {CardImpose.DEFAULT_CM_DISTANCE} or bleed).")
-	cut_marks_group.add_argument("--cut-mark-thickness", help=f"the thickness of the cutmarks. (default: {CardImpose.DEFAULT_CM_THICKNESS}).", default=CardImpose.DEFAULT_CM_THICKNESS)
-	cut_marks_group.add_argument("--no-inner-cut-marks", help=f"hide the cutmarks in between the cards.", action="store_true")
+	crop_marks_group = parser.add_argument_group("Crop Marks", "Configure the crop marks included around the cards.")
+	crop_marks_group.add_argument("--no-crop-marks", action="store_true", help="do not include cropmarks in the resulting document.")
+	crop_marks_group.add_argument("--crop-mark-length", help=f"the length of the cropmarks. (default: {CardImpose.DEFAULT_CM_LENGTH}).", default=CardImpose.DEFAULT_CM_LENGTH)
+	crop_marks_group.add_argument("--crop-mark-distance", help=f"the distance of the cropmarks form the card. (default: {CardImpose.DEFAULT_CM_DISTANCE} or bleed).")
+	crop_marks_group.add_argument("--crop-mark-thickness", help=f"the thickness of the cropmarks. (default: {CardImpose.DEFAULT_CM_THICKNESS}).", default=CardImpose.DEFAULT_CM_THICKNESS)
+	crop_marks_group.add_argument("--no-inner-crop-marks", help=f"hide the cropmarks in between the cards.", action="store_true")
 
 	args = parser.parse_args()
-
-	if not args.cut_mark_distance:
-		if args.bleed:
-			args.cut_mark_distance = args.bleed
-		else:
-			CardImpose.DEFAULT_CM_DISTANCE
-
-	if not args.bleed:
-		args.bleed = CardImpose.DEFAULT_BLEED
 
 	# argparse does not like enums
 	if args.mode == "duplicates":
@@ -60,22 +52,26 @@ def main():
 		.set_page_size(args.page_size, rotate=args.rotate_page) \
 		.set_gutter(args.gutter) \
 		.set_margin(args.margin) \
-		.set_bleed(args.bleed) \
 		.set_crop_marks(
-			length=args.cut_mark_length,
-			distance=args.cut_mark_distance,
-			thickness=args.cut_mark_thickness,
-			no_inner=args.no_inner_cut_marks
+			length=args.crop_mark_length,
+			thickness=args.crop_mark_thickness,
+			no_inner=args.no_inner_crop_marks
 		) \
 		.set_pages(args.pages) \
 		.set_mode(args.mode) \
 		.set_backside(args.backside)
 
+		if args.bleed:
+			impose.set_bleed(args.bleed)
+		
+		if args.crop_mark_distance:
+			impose.set_crop_marks(distance=args.crop_mark_distance)
+
 		if args.nup == "auto":
 			document = impose.fill_page()
 		else:
-			rows, cols = args.nup.split("x")
-			document = impose.impose(int(rows), int(cols))
+			rows, cols = parse_nup(args.nup)
+			document = impose.impose(rows, cols)
 
 		if not args.output:
 			output = os.path.basename(args.card).removesuffix('.pdf') + "_imposed.pdf"

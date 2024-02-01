@@ -130,7 +130,7 @@ To specify different bleeds, margins and gutters for different pages, split the 
 
 Lengths are given by a number with a unit.
 Currently, supported units are `mm`, `cm`, `in` and `px`.
-The arguments `--margin`, `--bleed` and `--gutter` can also receive separate horizontal and vertical lengths, combined by an `x`.
+The arguments `--margin` and `--gutter` can also receive separate horizontal and vertical lengths, combined by an `x`.
 Setting `--margin 1cmx2cm`, sets the left and right margin to 1cm and the top and bottom margin to 2cm.
 A single length for these arguments sets both directions to the same value.
 
@@ -139,3 +139,17 @@ A single length for these arguments sets both directions to the same value.
 By default cut marks are inserted around each imposed card.
 The distance, length and thickness can be set through command line arguments (see `cardimpose --help`).
 Additionally, it is possible to completely disable cutmarks or to hide the cutmarks in the middle of the imposed cards.
+
+## Library
+
+All features of the command line tool are also available through the `CardImpose` class.
+
+```python
+from cardimpose import CardImpose
+
+CardImpose("card.pdf") \
+	.set_bleed("3mm")  \
+	.set_gutter("5mm") \
+	.fill_page()       \
+	.save("out.pdf")
+```

@@ -36,16 +36,20 @@ class CardImpose:
 		self.margin_y = self.margin_x
 
 		self.bleed = parse_length(CardImpose.DEFAULT_BLEED)
+		self.fixed_bleed = False # whether the bleed was explicitly set by the user
+
 		self.output_size = fitz.paper_size(CardImpose.DEFAULT_PAPER_SIZE)
 
 		self.crop_mark_length = parse_length(CardImpose.DEFAULT_CM_LENGTH)
 		self.crop_mark_thickness = parse_length(CardImpose.DEFAULT_CM_THICKNESS)
 		self.crop_mark_distance = parse_length(CardImpose.DEFAULT_CM_DISTANCE)
+		self.fixed_crop_mark_distance = False # whether the distance was explicitly set by the user
 		self.crop_mark_no_inner = False
 		self.crop_mark_no_smaller_than = parse_length(CardImpose.DEFAULT_CM_NO_SMALLER_THAN)
 
 		self.mode = CardImpose.DEFAULT_MODE
 		self.backside = CardImpose.DEFAULT_BACKSIDE
+
 
 	def set_gutter(self, gutter):
 		"""Set both the vertical and horizontal gutter between the cards."""
@@ -63,6 +67,7 @@ class CardImpose:
 		"""Set the amount of bleed around the card."""
 
 		self.bleed = parse_length(bleed)
+		self.fixed_bleed = True
 		return self
 
 	def set_pages(self, pagespec):
@@ -85,6 +90,7 @@ class CardImpose:
 			self.crop_mark_length = parse_length(length)
 		if distance:
 			self.crop_mark_distance = parse_length(distance)
+			self.fixed_crop_mark_distance = True
 		if no_inner is not None:
 			self.crop_mark_no_inner = no_inner
 		if no_smaller_than is not None:
@@ -131,10 +137,10 @@ class CardImpose:
 	def fill_page(self) -> fitz.Document:
 		"""Fill the whole page with as many rows and columns as possible."""
 		output = fitz.Document()
-		rows, cols = self.calculate_nup()
+		rows, cols = self._calculate_nup()
 		return self.impose(rows, cols)
 
-	def calculate_nup(self) -> (int,int):
+	def _calculate_nup(self) -> (int,int):
 		card_page = self.card.load_page(self.pages[0])
 		cardwidth, cardheight = card_page.mediabox.width, card_page.mediabox.height
 		width, height = self.output_size
@@ -149,8 +155,34 @@ class CardImpose:
 
 		return (rows, cols)
 
+	def _detect_bleed(self, page):
+		"""Detect the bleed based on information on the given page in the input pdf."""
+
+		first_page = self.card.load_page(page)
+		bleedbox = first_page.bleedbox
+		trimbox = first_page.trimbox
+		horizontal_bleed = round((bleedbox.width - trimbox.width)/2, 3)
+		vertical_bleed = round((bleedbox.height - trimbox.height)/2, 3)
+
+		if horizontal_bleed != vertical_bleed:
+			raise RuntimeError("Automatically detected horizontal and vertical bleed not equal.")
+
+		return horizontal_bleed
+
+
 	def impose(self, rows, cols) -> fitz.Document:
 		"""Impose the card in rows and columns at the center of the document."""
+
+		# if there is no explicit bleed set, try to derive it based on the first page
+		if not self.fixed_bleed:
+			derived_bleed = self._detect_bleed(self.pages[0])
+			if derived_bleed:
+				self.bleed = derived_bleed
+
+		# if the crop mark distance is not set explicitly, make it equal to the bleed
+		if not self.fixed_crop_mark_distance and self.bleed > 0:
+			self.crop_mark_distance = self.bleed
+
 		output = fitz.Document()
 		for pages in generate_layout(self.pages, rows, cols, self.mode, self.backside):
 			outputpage = output.new_page(width=self.output_size[0], height=self.output_size[1])
