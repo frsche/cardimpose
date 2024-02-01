@@ -142,7 +142,7 @@ class CardImpose:
 
 	def _calculate_nup(self) -> (int,int):
 		card_page = self.card.load_page(self.pages[0])
-		cardwidth, cardheight = card_page.mediabox.width, card_page.mediabox.height
+		cardwidth, cardheight = card_page.bleedbox.width, card_page.bleedbox.height
 		width, height = self.output_size
 
 		available_width = width - 2 * self.margin_x
@@ -192,11 +192,11 @@ class CardImpose:
 	def _impose(self, rows, cols, pages, outputpage):
 		outputbox = outputpage.mediabox
 		card_page = self.card.load_page(pages[0])
-		cardwidth, cardheight = card_page.mediabox.width, card_page.mediabox.height
+		cardwidth, cardheight = card_page.bleedbox.width, card_page.bleedbox.height
 
 		for page_id in pages:
 			page = self.card.load_page(page_id)
-			if page.mediabox.width != cardwidth or page.mediabox.height != cardheight:
+			if page.bleedbox.width != cardwidth or page.bleedbox.height != cardheight:
 				raise RuntimeError("All cards must have the same size.")
 
 		# The center of the resulting page
@@ -225,7 +225,7 @@ class CardImpose:
 
 				page = pages[y*cols + x]
 				if page is not None:
-					outputpage.show_pdf_page(rect, self.card, page)
+					outputpage.show_pdf_page(rect, self.card, page, clip=card_page.bleedbox)
 
 				# Whether the current card in in the top/bottom row, left/right column
 				# Used to detect whether crop marks are on the inside of the grid
