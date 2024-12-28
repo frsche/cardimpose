@@ -20,7 +20,7 @@ def parse_length(length) -> float:
 
 	raise ValueError(f"Unsupported length \"{length}\".")
 
-def parse_tuple(tup) -> (float, float):
+def parse_tuple(tup) -> tuple[float, float]:
 	"""Parses the given argument as a tuple in the form \"AxB\" and returns (A,B) or returns (A, A) if only \"A\" is given."""
 
 	assert(type(tup) is str)

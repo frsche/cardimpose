@@ -101,18 +101,20 @@ class CardImpose:
 
 	def set_page_size(self, size, rotate=False):
 		"""Set the size of the resulting document.
-		Can be either a paper format (e.g. "A4") or a tuple of width and height (e.g. ("2cm", "2cm")).
+		Can be either a paper format (e.g. "A4"), or a tuple of width and height (e.g. ("2cm", "2cm")).
 		"""
 
 		# if the size is given as a string, we interpret it as a page format (e.g. "A4")
+		# or as a string containing the width and height dimensions
 		if type(size) == str:
-			size = fitz.paper_size(size)
-			if size == (-1,-1):
-				raise ValueError(f"Unknown paper size \"{size}\".")
-			self.output_size = size
+			format_size = fitz.paper_size(size)
+			if format_size == (-1,-1):
+				self.output_size = parse_tuple(size)
+			else:
+				self.output_size = format_size
 		else:
 			# otherwise, we expect a tuple of width and height
-			self.output_size = parse_tuple(size)
+			self.output_size = (parse_length(size[0]), parse_length(size[1]))
 
 		if rotate:
 			self.output_size = (self.output_size[1], self.output_size[0])
@@ -140,7 +142,7 @@ class CardImpose:
 		rows, cols = self._calculate_nup()
 		return self.impose(rows, cols)
 
-	def _calculate_nup(self) -> (int,int):
+	def _calculate_nup(self) -> tuple[int,int]:
 		card_page = self.card.load_page(self.pages[0])
 		cardwidth, cardheight = card_page.bleedbox.width, card_page.bleedbox.height
 		width, height = self.output_size
