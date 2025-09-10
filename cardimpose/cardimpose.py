@@ -76,7 +76,7 @@ class CardImpose:
 		self.pages = parse_page_spec(pagespec, self.card.page_count)
 		return self
 
-	def set_crop_marks(self, length=None, distance=None, no_inner=False, no_smaller_than=None, thickness=None):
+	def set_crop_marks(self, length=None, distance=None, no_inner=False, no_smaller_than=None, thickness=None, disable_crop_marks=None):
 		"""Configure the crop marks.
 
 		length: the length of the crop marks.
@@ -84,6 +84,7 @@ class CardImpose:
 		no_inner: only draw crop marks around the grid.
 		no_smaller_than: hide crop marks that are smaller than the given length.
 		thickness: the thickness of the crop marks.
+		disable_crop_marks: whether to not insert any crop marks.
 		"""
 
 		if length:
@@ -97,6 +98,8 @@ class CardImpose:
 			self.crop_mark_no_smaller_than = parse_length(no_smaller_than)
 		if thickness is not None:
 			self.crop_mark_thickness = parse_length(thickness)
+		if disable_crop_marks is not None:
+			self.disable_crop_marks = disable_crop_marks
 		return self
 
 	def set_page_size(self, size, rotate=False):
@@ -257,7 +260,7 @@ class CardImpose:
 						outputpage.draw_line(*line, width=self.crop_mark_thickness)
 
 	def crop_line(self, corner, direction, inner):
-		if inner and self.crop_mark_no_inner:
+		if inner and self.crop_mark_no_inner or self.disable_crop_marks:
 			return
 
 		# the maximal length a cropmark can have on the inside to not bleed into other cards

@@ -55,7 +55,8 @@ def main():
 		.set_crop_marks(
 			length=args.crop_mark_length,
 			thickness=args.crop_mark_thickness,
-			no_inner=args.no_inner_crop_marks
+			no_inner=args.no_inner_crop_marks,
+			disable_crop_marks=args.no_crop_marks
 		) \
 		.set_pages(args.pages) \
 		.set_mode(args.mode) \
