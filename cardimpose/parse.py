@@ -57,7 +57,7 @@ def parse_page_spec(spec, num_pages):
 			pages.extend(range(0, num_pages))
 
 		# a specific page
-		elif spec_part.isdigit() or spec_part[0] == "-":
+		elif spec_part.isdigit() or spec_part.startswith("-"):
 			pages.append(convert_page_number(spec_part))
 
 		# multiple copies of a specific page
@@ -80,7 +80,10 @@ def parse_page_spec(spec, num_pages):
 			else:
 				pages.extend(range(lb, ub-1, -1))
 		else:
-			raise ValueError(f"Error parsing page spec \"{spec}\".")	
+			raise ValueError(f"Error parsing page spec \"{spec}\".")
+
+	if not pages:
+		raise ValueError(f"Error parsing page spec \"{spec}\": no pages selected.")
 	return pages
 
 def parse_nup(nup):

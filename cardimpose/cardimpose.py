@@ -27,6 +27,14 @@ class CardImpose:
 		except RuntimeError as e:
 			raise RuntimeError(f"Invalid pdf file \"{card_path}\".")
 
+		if not self.card.is_pdf:
+			raise RuntimeError(f"Invalid pdf file \"{card_path}\".")
+
+		# the rotation of each page of the card pdf, which is removed from the pages by `_normalize_page`
+		self.rotations = [page.rotation for page in self.card]
+		for page in self.card:
+			self._normalize_page(page)
+
 		self.pages = range(0, self.card.page_count)
 
 		self.gutter_x = parse_length(CardImpose.DEFAULT_GUTTER)
@@ -46,6 +54,7 @@ class CardImpose:
 		self.fixed_crop_mark_distance = False # whether the distance was explicitly set by the user
 		self.crop_mark_no_inner = False
 		self.crop_mark_no_smaller_than = parse_length(CardImpose.DEFAULT_CM_NO_SMALLER_THAN)
+		self.disable_crop_marks = False
 
 		self.mode = CardImpose.DEFAULT_MODE
 		self.backside = CardImpose.DEFAULT_BACKSIDE
@@ -76,7 +85,7 @@ class CardImpose:
 		self.pages = parse_page_spec(pagespec, self.card.page_count)
 		return self
 
-	def set_crop_marks(self, length=None, distance=None, no_inner=False, no_smaller_than=None, thickness=None, disable_crop_marks=None):
+	def set_crop_marks(self, length=None, distance=None, no_inner=None, no_smaller_than=None, thickness=None, disable_crop_marks=None):
 		"""Configure the crop marks.
 
 		length: the length of the crop marks.
@@ -145,9 +154,29 @@ class CardImpose:
 		rows, cols = self._calculate_nup()
 		return self.impose(rows, cols)
 
+	def _normalize_page(self, page):
+		"""Reduce the visible area (cropbox) of the page to its bleedbox and remove its rotation.
+
+		`show_pdf_page` only shows the cropbox of a page and does not handle rotated pages,
+		so we impose unrotated pages and rotate them ourselves (see `self.rotations`).
+		This only modifies our in-memory copy of the card pdf.
+		"""
+
+		# according to the pdf specification, the bleedbox is clipped to the cropbox
+		box = page.bleedbox & page.cropbox
+		page.set_rotation(0)
+		page.set_cropbox(box)
+
+	def _card_size(self, page_id) -> tuple[float,float]:
+		"""The size of the card on the given page (including bleed), taking its rotation into account."""
+
+		rect = self.card.load_page(page_id).rect
+		if self.rotations[page_id] % 180 != 0:
+			return (rect.height, rect.width)
+		return (rect.width, rect.height)
+
 	def _calculate_nup(self) -> tuple[int,int]:
-		card_page = self.card.load_page(self.pages[0])
-		cardwidth, cardheight = card_page.bleedbox.width, card_page.bleedbox.height
+		cardwidth, cardheight = self._card_size(self.pages[0])
 		width, height = self.output_size
 
 		available_width = width - 2 * self.margin_x
@@ -164,10 +193,11 @@ class CardImpose:
 		"""Detect the bleed based on information on the given page in the input pdf."""
 
 		first_page = self.card.load_page(page)
-		bleedbox = first_page.bleedbox
+		# after `_normalize_page`, the cropbox is the (clipped) bleedbox
+		cardbox = first_page.cropbox
 		trimbox = first_page.trimbox
-		horizontal_bleed = round((bleedbox.width - trimbox.width)/2, 3)
-		vertical_bleed = round((bleedbox.height - trimbox.height)/2, 3)
+		horizontal_bleed = round((cardbox.width - trimbox.width)/2, 3)
+		vertical_bleed = round((cardbox.height - trimbox.height)/2, 3)
 
 		if horizontal_bleed != vertical_bleed:
 			raise RuntimeError("Automatically detected horizontal and vertical bleed not equal.")
@@ -178,30 +208,36 @@ class CardImpose:
 	def impose(self, rows, cols) -> fitz.Document:
 		"""Impose the card in rows and columns at the center of the document."""
 
+		if rows < 1 or cols < 1:
+			raise ValueError("The number of rows and columns must be positive.")
+
 		# if there is no explicit bleed set, try to derive it based on the first page
+		bleed = self.bleed
 		if not self.fixed_bleed:
 			derived_bleed = self._detect_bleed(self.pages[0])
-			if derived_bleed:
-				self.bleed = derived_bleed
+			if derived_bleed > 0:
+				bleed = derived_bleed
 
 		# if the crop mark distance is not set explicitly, make it equal to the bleed
-		if not self.fixed_crop_mark_distance and self.bleed > 0:
-			self.crop_mark_distance = self.bleed
+		crop_mark_distance = self.crop_mark_distance
+		if not self.fixed_crop_mark_distance and bleed > 0:
+			crop_mark_distance = bleed
 
 		output = fitz.Document()
 		for pages in generate_layout(self.pages, rows, cols, self.mode, self.backside):
 			outputpage = output.new_page(width=self.output_size[0], height=self.output_size[1])
-			self._impose(rows, cols, pages, outputpage)
+			self._impose(rows, cols, pages, outputpage, bleed, crop_mark_distance)
 		return output
 
-	def _impose(self, rows, cols, pages, outputpage):
+	def _impose(self, rows, cols, pages, outputpage, bleed, crop_mark_distance):
 		outputbox = outputpage.mediabox
-		card_page = self.card.load_page(pages[0])
-		cardwidth, cardheight = card_page.bleedbox.width, card_page.bleedbox.height
 
-		for page_id in pages:
-			page = self.card.load_page(page_id)
-			if page.bleedbox.width != cardwidth or page.bleedbox.height != cardheight:
+		# empty slots (None) are left blank, but can also be the first slot on a backside page
+		cards = [page_id for page_id in pages if page_id is not None]
+		cardwidth, cardheight = self._card_size(cards[0])
+
+		for page_id in cards:
+			if self._card_size(page_id) != (cardwidth, cardheight):
 				raise RuntimeError("All cards must have the same size.")
 
 		# The center of the resulting page
@@ -215,7 +251,7 @@ class CardImpose:
 		if start_x < self.margin_x or start_y < self.margin_y:
 			raise RuntimeError("Imposition does not fit page size.")
 
-		if cardwidth / 2 <= self.bleed or cardheight / 2 <= self.bleed:
+		if cardwidth / 2 <= bleed or cardheight / 2 <= bleed:
 			raise RuntimeError("Bleed too large for card size.")
 
 		for x in range(cols):
@@ -230,7 +266,8 @@ class CardImpose:
 
 				page = pages[y*cols + x]
 				if page is not None:
-					outputpage.show_pdf_page(rect, self.card, page, clip=card_page.bleedbox)
+					# the page is normalized, so its cropbox is exactly the card including bleed
+					outputpage.show_pdf_page(rect, self.card, page, rotate=-self.rotations[page])
 
 				# Whether the current card in in the top/bottom row, left/right column
 				# Used to detect whether crop marks are on the inside of the grid
@@ -240,32 +277,32 @@ class CardImpose:
 				is_bottom_row = y == rows-1
 
 				# the corners of the actual card where the crop marks point to
-				top_left_crop = rect.top_left + (self.bleed, self.bleed)
-				top_right_crop = rect.top_right + (-self.bleed, self.bleed)
-				bottom_left_crop = rect.bottom_left + (self.bleed, -self.bleed)
-				bottom_right_crop = rect.bottom_right + (-self.bleed, -self.bleed)
+				top_left_crop = rect.top_left + (bleed, bleed)
+				top_right_crop = rect.top_right + (-bleed, bleed)
+				bottom_left_crop = rect.bottom_left + (bleed, -bleed)
+				bottom_right_crop = rect.bottom_right + (-bleed, -bleed)
 
 				crop_lines = [
-					self.crop_line(top_left_crop, "left", not is_left_col),
-					self.crop_line(top_left_crop, "top", not is_top_row),
-					self.crop_line(top_right_crop, "top", not is_top_row),
-					self.crop_line(top_right_crop, "right", not is_right_col),
-					self.crop_line(bottom_left_crop, "left", not is_left_col),
-					self.crop_line(bottom_left_crop, "bottom", not is_bottom_row),
-					self.crop_line(bottom_right_crop, "right", not is_right_col),
-					self.crop_line(bottom_right_crop, "bottom", not is_bottom_row),
+					self.crop_line(top_left_crop, "left", not is_left_col, bleed, crop_mark_distance),
+					self.crop_line(top_left_crop, "top", not is_top_row, bleed, crop_mark_distance),
+					self.crop_line(top_right_crop, "top", not is_top_row, bleed, crop_mark_distance),
+					self.crop_line(top_right_crop, "right", not is_right_col, bleed, crop_mark_distance),
+					self.crop_line(bottom_left_crop, "left", not is_left_col, bleed, crop_mark_distance),
+					self.crop_line(bottom_left_crop, "bottom", not is_bottom_row, bleed, crop_mark_distance),
+					self.crop_line(bottom_right_crop, "right", not is_right_col, bleed, crop_mark_distance),
+					self.crop_line(bottom_right_crop, "bottom", not is_bottom_row, bleed, crop_mark_distance),
 				]
 				for line in crop_lines:
 					if line:
 						outputpage.draw_line(*line, width=self.crop_mark_thickness)
 
-	def crop_line(self, corner, direction, inner):
+	def crop_line(self, corner, direction, inner, bleed, distance):
 		if inner and self.crop_mark_no_inner or self.disable_crop_marks:
 			return
 
 		# the maximal length a cropmark can have on the inside to not bleed into other cards
-		inner_max_x = self.gutter_x + 2*self.bleed - 2*self.crop_mark_distance
-		inner_max_y = self.gutter_y + 2*self.bleed - 2*self.crop_mark_distance
+		inner_max_x = self.gutter_x + 2*bleed - 2*distance
+		inner_max_y = self.gutter_y + 2*bleed - 2*distance
 
 		if direction == "left":
 			x_fact = -1
@@ -294,9 +331,9 @@ class CardImpose:
 		if length <= 0 or (self.crop_mark_no_smaller_than and length < self.crop_mark_no_smaller_than):
 			return
 
-		p1x = corner.x + x_fact * self.crop_mark_distance
-		p1y = corner.y + y_fact * self.crop_mark_distance
-		p2x = corner.x + x_fact * (self.crop_mark_distance + length)
-		p2y = corner.y + y_fact * (self.crop_mark_distance + length)
+		p1x = corner.x + x_fact * distance
+		p1y = corner.y + y_fact * distance
+		p2x = corner.x + x_fact * (distance + length)
+		p2y = corner.y + y_fact * (distance + length)
 
 		return ((p1x, p1y), (p2x, p2y))

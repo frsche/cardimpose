@@ -45,6 +45,16 @@ class LayoutGeneratorTest(unittest.TestCase):
 		self.assertEqual(layout[2], [4,5,6,7])
 		self.assertEqual(layout[3], [8,8,8,8])
 
+	def test_backside_last_page_single_card(self):
+		# a single front with its backside
+		layout = list(generate_layout([0, 1], 2, 2, Mode.SINGLES, Backside.LAST_PAGE))
+		self.assertEqual(layout, [[0,None,None,None], [None,1,None,None]])
+		layout = list(generate_layout([0, 1], 2, 2, Mode.DUPLICATES, Backside.LAST_PAGE))
+		self.assertEqual(layout, [[0,0,0,0], [1,1,1,1]])
+
+		with self.assertRaises(RuntimeError):
+			list(generate_layout([0], 2, 2, Mode.SINGLES, Backside.LAST_PAGE))
+
 	def test_singles_backside_alternating(self):
 		pages = parse_page_spec("1-8", 8)
 		layout = list(generate_layout(pages, 2, 2, Mode.SINGLES, Backside.ALTERNATING))

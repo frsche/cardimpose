@@ -13,7 +13,7 @@ def main():
 
 	parser.add_argument("card", metavar="CARD", help="The path of the pdf file containing the card.")
 	parser.add_argument("-o", "--output", help="The path where the resulting document is stored.")
-	parser.add_argument("-p", "--pages", help="The pages of the card pdf to impose (default: {CardImpose.DEFAULT_PAGE_SPEC}).", default=CardImpose.DEFAULT_PAGE_SPEC)
+	parser.add_argument("-p", "--pages", help=f"The pages of the card pdf to impose (default: {CardImpose.DEFAULT_PAGE_SPEC}).", default=CardImpose.DEFAULT_PAGE_SPEC)
 
 	layout_group = parser.add_argument_group("Layout", "Configure the layout of the cards onto the resulting document.")
 	layout_group.add_argument("--nup", help="The number of rows and columns of cards to include.", default="auto")

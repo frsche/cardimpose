@@ -45,7 +45,7 @@ It is also possible to explicitly set the number of rows and columns:
 
 Customize the paper size, remove inner cut marks, and more:
 
-`$ cardimpose --gutter 5mm --bleed 3mm --page-size A3 --rotate-page --no-inner-cut-marks card.pdf`
+`$ cardimpose --gutter 5mm --bleed 3mm --page-size A3 --rotate-page --no-inner-crop-marks card.pdf`
 
 [<img src="https://github.com/frsche/cardimpose/blob/main/images/example5.jpg?raw=true">](https://github.com/frsche/cardimpose/blob/main/examples/example5.pdf?raw=true)
 

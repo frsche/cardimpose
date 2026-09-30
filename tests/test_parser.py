@@ -72,6 +72,11 @@ class TestPageSpec(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			parse_page_spec("0", 3)
 
+	def test_empty_spec(self):
+		for spec in ["", ",", "1,", "1,,2", "0x1"]:
+			with self.assertRaises(ValueError):
+				parse_page_spec(spec, 3)
+
 class TestParseLength(unittest.TestCase):
 
 	def test_mm(self):
