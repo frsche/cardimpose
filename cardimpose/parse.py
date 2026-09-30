@@ -65,7 +65,7 @@ def parse_page_spec(spec, num_pages):
 			try:
 				factor = int(r[0])
 			except ValueError:
-				raise ValueError(f"Error parsing page spec\"{spec}\": factor {r[0]} is no integer.")
+				raise ValueError(f"Error parsing page spec \"{spec}\": factor {r[0]} is not an integer.")
 			if factor < 0:
 				raise ValueError(f"Error parsing page spec \"{spec}\": factor {r[0]} can not be negative.")
 			page = convert_page_number(r[1])

@@ -80,7 +80,7 @@ class CardImpose:
 		return self
 
 	def set_pages(self, pagespec):
-		""""Set the desired range of pages of the card pdf to impose."""
+		"""Set the desired range of pages of the card pdf to impose."""
 
 		self.pages = parse_page_spec(pagespec, self.card.page_count)
 		return self
@@ -134,7 +134,7 @@ class CardImpose:
 
 	def set_mode(self, mode):
 		"""Set the card mode of the resulting document.
-		Can be either Mode.DUPLICATES or Mode.SINGELS	
+		Can be either Mode.DUPLICATES or Mode.SINGLES	
 		"""
 
 		self.mode = mode
@@ -185,7 +185,7 @@ class CardImpose:
 		cols = math.floor((available_width - cardwidth) / (cardwidth + self.gutter_x)) + 1
 
 		if rows <= 0 or cols <= 0:
-			raise RuntimeError("Page is to small to fit any cards.")
+			raise RuntimeError("Page is too small to fit any cards.")
 
 		return (rows, cols)
 
@@ -269,7 +269,7 @@ class CardImpose:
 					# the page is normalized, so its cropbox is exactly the card including bleed
 					outputpage.show_pdf_page(rect, self.card, page, rotate=-self.rotations[page])
 
-				# Whether the current card in in the top/bottom row, left/right column
+				# Whether the current card is in the top/bottom row, left/right column
 				# Used to detect whether crop marks are on the inside of the grid
 				is_left_col = x == 0
 				is_top_row = y == 0

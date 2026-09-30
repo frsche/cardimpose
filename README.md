@@ -11,7 +11,7 @@ Click the images to view the corresponding pdf file.
 <details>
 <summary>Show Example</summary>
 
-Lets say you have a buisness card named `card.pdf`:
+Let's say you have a business card named `card.pdf`:
 
 [<img src="https://github.com/frsche/cardimpose/blob/main/images/card.jpg?raw=true">](https://github.com/frsche/cardimpose/blob/main/examples/card.pdf?raw=true)
 
@@ -19,7 +19,7 @@ With the `cardimpose` command line tool, it is easy to print multiple copies of 
 
 `$ cardimpose card.pdf`
 
-By default, the cards a placed side by side on an A4 sheet, filling up the entire document:
+By default, the cards are placed side by side on an A4 sheet, filling up the entire document:
 
 [<img src="https://github.com/frsche/cardimpose/blob/main/images/example1.jpg?raw=true">](https://github.com/frsche/cardimpose/blob/main/examples/example1.pdf?raw=true)
 
@@ -31,7 +31,7 @@ In the following example, we add a 5mm gap between the cards:
 [<img src="https://github.com/frsche/cardimpose/blob/main/images/example2.jpg?raw=true">](https://github.com/frsche/cardimpose/blob/main/examples/example2.pdf?raw=true)
 
 The example card actually has a 3mm bleed around the edges.
-When informing `cardimpose`, it positions the cut marks accordingly:
+When informing `cardimpose`, it positions the crop marks accordingly:
 
 `$ cardimpose --gutter 5mm --bleed 3mm card.pdf`
 
@@ -43,7 +43,7 @@ It is also possible to explicitly set the number of rows and columns:
 
 [<img src="https://github.com/frsche/cardimpose/blob/main/images/example4.jpg?raw=true">](https://github.com/frsche/cardimpose/blob/main/examples/example4.pdf?raw=true)
 
-Customize the paper size, remove inner cut marks, and more:
+Customize the paper size, remove inner crop marks, and more:
 
 `$ cardimpose --gutter 5mm --bleed 3mm --page-size A3 --rotate-page --no-inner-crop-marks card.pdf`
 
@@ -136,9 +136,9 @@ A single length for these arguments sets both directions to the same value.
 
 ### Crop Marks
 
-By default cut marks are inserted around each imposed card.
+By default crop marks are inserted around each imposed card.
 The distance, length and thickness can be set through command line arguments (see `cardimpose --help`).
-Additionally, it is possible to completely disable cutmarks or to hide the cutmarks in the middle of the imposed cards.
+Additionally, it is possible to completely disable crop marks or to hide the crop marks in the middle of the imposed cards.
 
 ## Library
 

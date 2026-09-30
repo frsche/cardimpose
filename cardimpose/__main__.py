@@ -26,11 +26,11 @@ def main():
 	layout_group.add_argument("--mode", help=f"Whether to generate single card per input page or whole output page.", choices=["duplicates", "singles"], default="duplicates")
 
 	crop_marks_group = parser.add_argument_group("Crop Marks", "Configure the crop marks included around the cards.")
-	crop_marks_group.add_argument("--no-crop-marks", action="store_true", help="do not include cropmarks in the resulting document.")
-	crop_marks_group.add_argument("--crop-mark-length", help=f"the length of the cropmarks. (default: {CardImpose.DEFAULT_CM_LENGTH}).", default=CardImpose.DEFAULT_CM_LENGTH)
-	crop_marks_group.add_argument("--crop-mark-distance", help=f"the distance of the cropmarks form the card. (default: {CardImpose.DEFAULT_CM_DISTANCE} or bleed).")
-	crop_marks_group.add_argument("--crop-mark-thickness", help=f"the thickness of the cropmarks. (default: {CardImpose.DEFAULT_CM_THICKNESS}).", default=CardImpose.DEFAULT_CM_THICKNESS)
-	crop_marks_group.add_argument("--no-inner-crop-marks", help=f"hide the cropmarks in between the cards.", action="store_true")
+	crop_marks_group.add_argument("--no-crop-marks", action="store_true", help="do not include crop marks in the resulting document.")
+	crop_marks_group.add_argument("--crop-mark-length", help=f"the length of the crop marks. (default: {CardImpose.DEFAULT_CM_LENGTH}).", default=CardImpose.DEFAULT_CM_LENGTH)
+	crop_marks_group.add_argument("--crop-mark-distance", help=f"the distance of the crop marks from the card. (default: {CardImpose.DEFAULT_CM_DISTANCE} or bleed).")
+	crop_marks_group.add_argument("--crop-mark-thickness", help=f"the thickness of the crop marks. (default: {CardImpose.DEFAULT_CM_THICKNESS}).", default=CardImpose.DEFAULT_CM_THICKNESS)
+	crop_marks_group.add_argument("--no-inner-crop-marks", help=f"hide the crop marks in between the cards.", action="store_true")
 
 	args = parser.parse_args()
 
