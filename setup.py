@@ -14,7 +14,7 @@ setup(
 
     packages=find_packages(),
     install_requires=[
-        'pymupdf',
+        'pymupdf>=1.24.3', # first version providing the `pymupdf` module name
     ],
     entry_points={
         'console_scripts': [

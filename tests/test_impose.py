@@ -1,4 +1,4 @@
-import fitz
+import pymupdf
 import os
 import tempfile
 import unittest
@@ -11,13 +11,13 @@ def make_card(path, rotation=0, cropbox=None):
 	"""Save a card whose bleedbox (10px inside the page) is split into a red left and a blue right half
 	with a green strip at the top. Everything outside the bleedbox is magenta and must not be imposed."""
 
-	doc = fitz.open()
+	doc = pymupdf.open()
 	page = doc.new_page(width=220, height=130)
 	page.draw_rect(page.rect, fill=(1, 0, 1), width=0)
-	page.draw_rect(fitz.Rect(10, 10, 110, 120), fill=(1, 0, 0), width=0)
-	page.draw_rect(fitz.Rect(110, 10, 210, 120), fill=(0, 0, 1), width=0)
-	page.draw_rect(fitz.Rect(10, 10, 210, 40), fill=(0, 1, 0), width=0)
-	page.set_bleedbox(fitz.Rect(10, 10, 210, 120))
+	page.draw_rect(pymupdf.Rect(10, 10, 110, 120), fill=(1, 0, 0), width=0)
+	page.draw_rect(pymupdf.Rect(110, 10, 210, 120), fill=(0, 0, 1), width=0)
+	page.draw_rect(pymupdf.Rect(10, 10, 210, 40), fill=(0, 1, 0), width=0)
+	page.set_bleedbox(pymupdf.Rect(10, 10, 210, 120))
 	if cropbox:
 		page.set_cropbox(cropbox)
 	page.set_rotation(rotation)
@@ -26,7 +26,7 @@ def make_card(path, rotation=0, cropbox=None):
 def render_card(path):
 	"""Render the card like a pdf viewer shows it, with the visible area reduced to the bleedbox."""
 
-	page = fitz.open(path).load_page(0)
+	page = pymupdf.open(path).load_page(0)
 	page.set_cropbox(page.bleedbox & page.cropbox)
 	return page.get_pixmap()
 
@@ -65,7 +65,7 @@ class ResultAnalyzer:
 
 	def check_format(self, asserted_format, rotated=False):
 		actual_size = self.page.mediabox.width, self.page.mediabox.height
-		asserted_size = fitz.paper_size(asserted_format)
+		asserted_size = pymupdf.paper_size(asserted_format)
 		if rotated:
 			asserted_size = asserted_size[1], asserted_size[0]
 		tc = unittest.TestCase()
@@ -157,7 +157,7 @@ class TestImpose(unittest.TestCase):
 			path = os.path.join(tmp, "card.pdf")
 			for rotation in (0, 90, 180, 270):
 				# the cropbox is either the whole page or smaller than the bleedbox
-				for cropbox in (None, fitz.Rect(20, 20, 200, 110)):
+				for cropbox in (None, pymupdf.Rect(20, 20, 200, 110)):
 					with self.subTest(rotation=rotation, cropbox=cropbox):
 						make_card(path, rotation, cropbox)
 						expected = render_card(path)

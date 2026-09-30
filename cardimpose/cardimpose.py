@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import fitz
+import pymupdf
 import math
 
 from cardimpose.parse import parse_length, parse_tuple, parse_page_spec
@@ -23,7 +23,7 @@ class CardImpose:
 		"""Construct a new `CardImpose` to impose the card contained in the `card_path` pdf file."""
 
 		try:
-			self.card = fitz.open(card_path)
+			self.card = pymupdf.open(card_path)
 		except RuntimeError as e:
 			raise RuntimeError(f"Invalid pdf file \"{card_path}\".")
 
@@ -46,7 +46,7 @@ class CardImpose:
 		self.bleed = parse_length(CardImpose.DEFAULT_BLEED)
 		self.fixed_bleed = False # whether the bleed was explicitly set by the user
 
-		self.output_size = fitz.paper_size(CardImpose.DEFAULT_PAPER_SIZE)
+		self.output_size = pymupdf.paper_size(CardImpose.DEFAULT_PAPER_SIZE)
 
 		self.crop_mark_length = parse_length(CardImpose.DEFAULT_CM_LENGTH)
 		self.crop_mark_thickness = parse_length(CardImpose.DEFAULT_CM_THICKNESS)
@@ -119,7 +119,7 @@ class CardImpose:
 		# if the size is given as a string, we interpret it as a page format (e.g. "A4")
 		# or as a string containing the width and height dimensions
 		if type(size) == str:
-			format_size = fitz.paper_size(size)
+			format_size = pymupdf.paper_size(size)
 			if format_size == (-1,-1):
 				self.output_size = parse_tuple(size)
 			else:
@@ -148,9 +148,9 @@ class CardImpose:
 		self.backside = backside
 		return self
 
-	def fill_page(self) -> fitz.Document:
+	def fill_page(self) -> pymupdf.Document:
 		"""Fill the whole page with as many rows and columns as possible."""
-		output = fitz.Document()
+		output = pymupdf.Document()
 		rows, cols = self._calculate_nup()
 		return self.impose(rows, cols)
 
@@ -205,7 +205,7 @@ class CardImpose:
 		return horizontal_bleed
 
 
-	def impose(self, rows, cols) -> fitz.Document:
+	def impose(self, rows, cols) -> pymupdf.Document:
 		"""Impose the card in rows and columns at the center of the document."""
 
 		if rows < 1 or cols < 1:
@@ -223,7 +223,7 @@ class CardImpose:
 		if not self.fixed_crop_mark_distance and bleed > 0:
 			crop_mark_distance = bleed
 
-		output = fitz.Document()
+		output = pymupdf.Document()
 		for pages in generate_layout(self.pages, rows, cols, self.mode, self.backside):
 			outputpage = output.new_page(width=self.output_size[0], height=self.output_size[1])
 			self._impose(rows, cols, pages, outputpage, bleed, crop_mark_distance)
@@ -262,7 +262,7 @@ class CardImpose:
 				y_pos = start_y + y * cardheight + y * self.gutter_y
 
 				# The bounding box of the current card
-				rect = fitz.Rect(x_pos, y_pos, x_pos + cardwidth, y_pos + cardheight)
+				rect = pymupdf.Rect(x_pos, y_pos, x_pos + cardwidth, y_pos + cardheight)
 
 				page = pages[y*cols + x]
 				if page is not None:
