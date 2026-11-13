@@ -20,6 +20,9 @@ setup(
         'console_scripts': [
             'cardimpose = cardimpose.__main__:main',
         ],
+        'gui_scripts': [
+            'cardimpose-gui = cardimpose.gui:main',
+        ],
     },
     keywords='imposition, print, pdf'
 )

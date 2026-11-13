@@ -106,6 +106,16 @@ Install `cardimpose` using pip:
 pip install cardimpose
 ```
 
+## Graphical Interface
+
+<img src="https://raw.githubusercontent.com/frsche/cardimpose/refs/heads/main/images/gui_screenshot.png" />
+
+Besides the command line tool, `cardimpose` comes with a graphical interface that shows a live preview of the resulting document:
+
+`$ cardimpose-gui`
+
+All settings of the command line tool are available, and the preview is updated whenever a setting changes.
+
 ## Settings
 
 ### Specifying Pages
