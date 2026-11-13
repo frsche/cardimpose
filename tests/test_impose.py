@@ -3,6 +3,7 @@ import os
 import tempfile
 import unittest
 from cardimpose.cardimpose import CardImpose
+from cardimpose.layout import Mode
 from cardimpose.parse import parse_length
 
 WHITE = (255, 255, 255)
@@ -134,6 +135,24 @@ class TestImpose(unittest.TestCase):
 			.set_crop_marks(disable_crop_marks=True) \
 			.impose(2, 2)
 		self.assertGreater(len(with_marks[0].get_drawings()), len(without_marks[0].get_drawings()))
+
+	def test_no_crop_marks_on_empty_slots(self):
+		# a single card in singles mode on a 2x2 grid leaves three slots empty
+		doc = CardImpose("tests/card.pdf") \
+			.set_mode(Mode.SINGLES) \
+			.impose(2, 2)
+		page = doc.load_page(0)
+		card = page.get_image_rects(page.get_images()[0][0])
+		self.assertEqual(len(card), 1)
+
+		# all crop marks are drawn around the only card, at full length
+		lines = [item for drawing in page.get_drawings() for item in drawing["items"] if item[0] == "l"]
+		self.assertEqual(len(lines), 8)
+		area = card[0] + (-parse_length("8mm"), -parse_length("8mm"), parse_length("8mm"), parse_length("8mm"))
+		for _, p1, p2 in lines:
+			self.assertIn(p1, area)
+			self.assertIn(p2, area)
+			self.assertAlmostEqual(abs(p2 - p1), parse_length(CardImpose.DEFAULT_CM_LENGTH), 3)
 
 	def test_crop_mark_settings_are_kept(self):
 		impose = CardImpose("tests/card.pdf") \

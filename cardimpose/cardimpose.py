@@ -254,8 +254,17 @@ class CardImpose:
 		if cardwidth / 2 <= bleed or cardheight / 2 <= bleed:
 			raise RuntimeError("Bleed too large for card size.")
 
+		def has_card(x, y):
+			"""Whether there is a card in the given slot of the grid."""
+			return 0 <= x < cols and 0 <= y < rows and pages[y*cols + x] is not None
+
 		for x in range(cols):
 			for y in range(rows):
+
+				page = pages[y*cols + x]
+				# empty slots get neither a card nor crop marks
+				if page is None:
+					continue
 
 				# The top left corner of the current card on the page
 				x_pos = start_x + x * cardwidth + x * self.gutter_x
@@ -264,17 +273,15 @@ class CardImpose:
 				# The bounding box of the current card
 				rect = pymupdf.Rect(x_pos, y_pos, x_pos + cardwidth, y_pos + cardheight)
 
-				page = pages[y*cols + x]
-				if page is not None:
-					# the page is normalized, so its cropbox is exactly the card including bleed
-					outputpage.show_pdf_page(rect, self.card, page, rotate=-self.rotations[page])
+				# the page is normalized, so its cropbox is exactly the card including bleed
+				outputpage.show_pdf_page(rect, self.card, page, rotate=-self.rotations[page])
 
-				# Whether the current card is in the top/bottom row, left/right column
-				# Used to detect whether crop marks are on the inside of the grid
-				is_left_col = x == 0
-				is_top_row = y == 0
-				is_right_col = x == cols-1
-				is_bottom_row = y == rows-1
+				# Whether there is no card to the left/top/right/bottom of the current card
+				# Used to detect whether crop marks are on the inside of the grid of cards
+				is_left_col = not has_card(x-1, y)
+				is_top_row = not has_card(x, y-1)
+				is_right_col = not has_card(x+1, y)
+				is_bottom_row = not has_card(x, y+1)
 
 				# the corners of the actual card where the crop marks point to
 				top_left_crop = rect.top_left + (bleed, bleed)
